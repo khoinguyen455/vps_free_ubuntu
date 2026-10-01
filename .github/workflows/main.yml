@@ -1,0 +1,74 @@
+name: Ubuntu Setup ( Space Optimer )
+
+on:
+  workflow_dispatch:
+
+jobs:
+  ubuntu:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Free Disk Space (Ubuntu) Mất 1 - 5 Phút
+        uses: khoinguyen566/Optimer-Disk-Space@main
+        with:
+          tool-cache: true
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          docker-images: true
+          swap-storage: true
+
+      - name: Clean Packages
+        run: |
+          RC_PACKAGES=$(dpkg -l | grep '^rc' | awk '{print $2}')
+          if [ ! -z "$RC_PACKAGES" ]; then
+            sudo dpkg --purge $RC_PACKAGES
+          fi
+
+      - name: System Info
+        run: |
+          echo "OS:"
+          cat /etc/os-release
+          uname -a
+
+      - name: Update packages & Python
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y curl wget git unzip python3 python3-pip
+
+      - name: Kết nối Tailscale
+        uses: tailscale/github-action@v3
+        with:
+          authkey: ${{ secrets.TAILSCALE_AUTHKEY }}
+
+      - name: Kiểm tra Cấu hình ssh
+        run: |
+          sudo systemctl enable --now ssh
+
+      - name: Thông tin kết nối 🎉
+        run: |
+          # Lấy IP Tailscale
+          TS_IP=$(tailscale ip -4)
+          
+          # Tạo mật khẩu ngẫu nhiên an toàn
+          RANDOM_PASS=$(python3 -c "import secrets, string; chars = string.ascii_letters + string.digits + '!@#$%^&*()_+-='; pwd = [secrets.choice(string.ascii_uppercase) for _ in range(2)] + [secrets.choice(string.digits) for _ in range(2)] + [secrets.choice('!@#$%^&*()_+-=') for _ in range(2)] + [secrets.choice(chars) for _ in range(18)]; secrets.SystemRandom().shuffle(pwd); print(''.join(pwd))")
+          
+          # Đổi mật khẩu cho user 'runner'
+          echo "runner:$RANDOM_PASS" | sudo chpasswd
+          
+          if [ -f "CleanSpace.sh" ]; then
+            chmod +x CleanSpace.sh && sudo ./CleanSpace.sh
+          fi
+          
+          echo "=================================================="
+          echo "🎉 MÁY ẢO ĐÃ SẴN SÀNG KẾT NỐI!"
+          echo "--------------------------------------------------"
+          echo " Host (IP): $TS_IP"
+          echo " User: runner"
+          echo " Password: $RANDOM_PASS"
+          echo " Command: ssh runner@$TS_IP"
+          echo "=================================================="
+          
+          sleep 19800
