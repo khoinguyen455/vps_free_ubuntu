@@ -10,7 +10,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Free Disk Space (Ubuntu) Mất 1 - 5 Phút
-        uses: khoinguyen566/Optimer-Disk-Space@main
+        uses: khoinguyen455/Optimer-Disk-Space@main
         with:
           tool-cache: true
           android: true
